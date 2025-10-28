@@ -1,6 +1,6 @@
 """
 map_generator.py
-新しいSentinel-2画像（雲量20％以下）があればマップを自動更新し、GitHub Pagesにpush
+GitHub Actionsで Earth Engine 認証トークンを利用してマップ更新
 """
 
 import ee
@@ -8,10 +8,11 @@ import os
 from datetime import datetime
 import subprocess
 
-# ==== Earth Engine 初期化（認証トークンはActionsで設定済み） ====
-ee.Initialize()
+# ==== Earth Engine 初期化 ====
+cred_file = os.path.expanduser("~/.config/earthengine/credentials")
+ee.Initialize(ee.ServiceAccountCredentials(None, cred_file))
 
-# ==== 設定 ====
+# ==== GitHub / 出力設定 ====
 GITHUB_USER = "kitsukisaiseikyo-byte"
 REPO_NAME = "shinjo-mugimap"
 BRANCH = "main"
@@ -19,7 +20,7 @@ OUTPUT_HTML = "index.html"
 LATEST_FILE = "latest_date.txt"
 COMMIT_MESSAGE = f"auto update map {datetime.now():%Y-%m-%d %H:%M:%S}"
 
-# ==== 解析対象範囲 ====
+# ==== Sentinel-2 対象範囲 ====
 boundary = ee.Geometry.Polygon([
     [131.388245, 33.554557],
     [131.773453, 33.576871],
@@ -28,8 +29,7 @@ boundary = ee.Geometry.Polygon([
     [131.388245, 33.554557]
 ])
 
-# ==== Sentinel-2 最新画像チェック ====
-print("🔍 新しい画像をチェック中...")
+# ==== 最新画像チェック ====
 collection = (
     ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
     .filterBounds(boundary)
@@ -40,7 +40,6 @@ collection = (
 
 latest_image = collection.first()
 latest_date = ee.Date(latest_image.get('system:time_start')).format('YYYY-MM-dd').getInfo()
-print(f"最新観測日: {latest_date}")
 
 # ==== 前回日付との比較 ====
 if os.path.exists(LATEST_FILE):
@@ -53,9 +52,9 @@ if last_date == latest_date:
     print("✅ 新しい画像はありません。終了します。")
     exit(0)
 
-print("🛰️ 新しい画像があります！マップを生成します。")
+print(f"🛰️ 新しい画像があります: {latest_date}")
 
-# ==== マップ生成（ここを既存のマップ処理に差し替え）====
+# ==== マップ生成（既存処理に差し替え可能） ====
 with open(OUTPUT_HTML, "w") as f:
     f.write(f"<html><body><h2>新しいマップ: {latest_date}</h2></body></html>")
 
@@ -71,4 +70,3 @@ subprocess.run(["git", "commit", "-m", COMMIT_MESSAGE])
 subprocess.run(["git", "push", "origin", BRANCH])
 
 print("✅ GitHub Pagesへ自動反映完了！")
-
