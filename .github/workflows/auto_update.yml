@@ -1,8 +1,9 @@
+# .github/workflows/auto_update.yml
 name: Auto Update Map
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # 毎日 9:00 JST（=0:00 UTC）に実行
+    - cron: '0 0 * * *'  # 毎日 9:00 JST（=0:00 UTC）
   workflow_dispatch:      # 手動実行も可能
 
 jobs:
@@ -10,27 +11,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ① リポジトリをチェックアウト
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ② Python 環境セットアップ
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
+      # ③ 必要パッケージインストール
       - name: Install dependencies
         run: |
-          pip install earthengine-api folium geopandas
+          pip install --upgrade pip
+          pip install earthengine-api folium geopandas pandas numpy openpyxl
 
+      # ④ Earth Engine 認証
       - name: Authenticate Earth Engine
         env:
           EARTHENGINE_TOKEN: ${{ secrets.EE_REFRESH_TOKEN }}
         run: |
+          mkdir -p ~/.config/earthengine
           echo "$EARTHENGINE_TOKEN" > ~/.config/earthengine/credentials
 
+      # ⑤ マップ生成スクリプト実行
       - name: Run map generator
         run: python map_generator.py
 
+      # ⑥ GitHub に push（変更があれば）
       - name: Push changes
         run: |
-          git push
+          git config user.name "auto-bot"
+          git config user.email "auto@bot.com"
+          git add .
+          git commit -m "Auto update map $(date '+%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+          git push origin main
