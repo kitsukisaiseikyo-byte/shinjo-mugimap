@@ -1,0 +1,36 @@
+name: Auto Update Map
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 毎日 9:00 JST（=0:00 UTC）に実行
+  workflow_dispatch:      # 手動実行も可能
+
+jobs:
+  update-map:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install earthengine-api folium geopandas
+
+      - name: Authenticate Earth Engine
+        env:
+          EARTHENGINE_TOKEN: ${{ secrets.EE_REFRESH_TOKEN }}
+        run: |
+          echo "$EARTHENGINE_TOKEN" > ~/.config/earthengine/credentials
+
+      - name: Run map generator
+        run: python map_generator.py
+
+      - name: Push changes
+        run: |
+          git push
