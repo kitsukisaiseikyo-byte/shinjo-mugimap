@@ -10,7 +10,7 @@ import subprocess
 
 # ==== Earth Engine 認証 ====
 ee.Authenticate()
-ee.Initialize()
+ee.Initialize(project='ee-kitsukisaiseikyo')
 
 # ==== 設定 ====
 GITHUB_USER = "kitsukisaiseikyo-byte"
