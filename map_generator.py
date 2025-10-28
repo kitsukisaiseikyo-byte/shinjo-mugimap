@@ -1,16 +1,11 @@
-"""
-map_generator.py
-新しいSentinel-2画像（雲量20％以下）があればマップを自動更新し、GitHubにpush
-"""
-
 import ee
 import os
 from datetime import datetime
 import subprocess
 
-# ==== Earth Engine 認証 ====
-ee.Authenticate()
-ee.Initialize(project='ee-kitsukisaiseikyo')
+# ==== Earth Engine 初期化（認証済みトークン利用） ====
+# GitHub Actions では事前に ~/.config/earthengine/credentials にトークンを置く
+ee.Initialize()
 
 # ==== 設定 ====
 GITHUB_USER = "kitsukisaiseikyo-byte"
@@ -21,7 +16,6 @@ LATEST_FILE = "latest_date.txt"
 COMMIT_MESSAGE = f"auto update map {datetime.now():%Y-%m-%d %H:%M:%S}"
 
 # ==== 解析対象範囲 ====
-# ここはあなたの既存コードの polygon 範囲を利用
 boundary = ee.Geometry.Polygon([
     [131.388245, 33.554557],
     [131.773453, 33.576871],
@@ -57,9 +51,7 @@ if last_date == latest_date:
 
 print("🛰️ 新しい画像があります！マップを生成します。")
 
-# ==== マップ生成（ここをあなたの既存処理に差し替え）====
-# 例として、LAIやNDVIを生成しfoliumマップに保存
-# ↓の部分はあなたの既存マップ生成処理をコピペ
+# ==== マップ生成（ここは既存処理に差し替え）====
 with open(OUTPUT_HTML, "w") as f:
     f.write(f"<html><body><h2>新しいマップ: {latest_date}</h2></body></html>")
 
@@ -71,7 +63,6 @@ with open(LATEST_FILE, 'w') as f:
 subprocess.run(["git", "config", "--global", "user.name", "auto-bot"])
 subprocess.run(["git", "config", "--global", "user.email", "auto@bot.com"])
 subprocess.run(["git", "add", "."])
-subprocess.run(["git", "commit", "-m", COMMIT_MESSAGE])
-subprocess.run(["git", "push", "origin", BRANCH])
-
+subprocess.run(["git", "commit", "-m", COMMIT_MESSAGE], shell=True, check=False)
+subprocess.run(["git", "push", "origin", BRANCH], shell=True)
 print("✅ GitHub Pagesへ自動反映完了！")
