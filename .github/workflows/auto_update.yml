@@ -2,8 +2,8 @@ name: Auto Update Map
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # 毎日9:00 JST（=0:00 UTC）に実行
-  workflow_dispatch:      # 手動実行も可能
+    - cron: '0 0 * * *'  # 毎日 9:00 JST（0:00 UTC）
+  workflow_dispatch:      # 手動実行可能
 
 jobs:
   update-map:
@@ -31,4 +31,3 @@ jobs:
 
       - name: Run map generator
         run: python map_generator.py
-
