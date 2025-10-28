@@ -1,33 +1,53 @@
 name: Auto Update Map
 
 on:
+  workflow_dispatch:       # 手動実行用
   schedule:
-    - cron: '0 0 * * *'  # 毎日 9:00 JST（0:00 UTC）
-  workflow_dispatch:      # 手動実行可能
+    - cron: "0 6 * * *"    # 毎朝6時に自動実行（日本時間15時）
 
 jobs:
   update-map:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    # 1️⃣ リポジトリ取得
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+    # 2️⃣ Pythonセットアップ
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
 
-      - name: Install dependencies
-        run: |
-          pip install earthengine-api folium geopandas
+    # 3️⃣ 依存パッケージインストール
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install earthengine-api folium geemap
 
-      - name: Authenticate Earth Engine
-        env:
-          EARTHENGINE_TOKEN: ${{ secrets.EE_REFRESH_TOKEN }}
-        run: |
-          mkdir -p ~/.config/earthengine
-          echo "$EARTHENGINE_TOKEN" > ~/.config/earthengine/credentials
+    # 4️⃣ Earth Engine 認証ファイル作成
+    - name: Set up Earth Engine credentials
+      run: |
+        mkdir -p ~/.config/earthengine
+        echo "$EE_CREDENTIALS" > ~/.config/earthengine/credentials
+      env:
+        EE_CREDENTIALS: ${{ secrets.EE_CREDENTIALS }}
 
-      - name: Run map generator
-        run: python map_generator.py
+    # 5️⃣ マップ生成スクリプト実行
+    - name: Run map generator
+      run: |
+        python map_generator.py
+
+    # 6️⃣ 変更があればGitHubへPush（PAT利用）
+    - name: Push changes
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/kitsukisaiseikyo-byte/shinjo-mugimap.git
+        git add .
+        git commit -m "auto update map $(date '+%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+        git push origin main
+
