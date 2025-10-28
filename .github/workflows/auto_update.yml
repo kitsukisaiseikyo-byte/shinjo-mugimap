@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: "0 6 * * *"    # 毎朝6時に自動実行（日本時間15時）
 
+# 1️⃣ GitHub Actionsのデフォルトトークンに書き込み権限を付与 (追加/修正)
+permissions:
+  contents: write # 👈 これを追加！
+
 jobs:
   update-map:
     runs-on: ubuntu-latest
